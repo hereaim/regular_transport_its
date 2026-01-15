@@ -1,6 +1,10 @@
 import random
-from math import radians, cos, sin, asin, sqrt, atan2, pi
+from math import *
 import config
+from logger import setup_logger
+
+
+logger = setup_logger()
 
 
 # расчет расстояния между двумя координатами
@@ -18,17 +22,19 @@ def haversine(lat1, lon1, lat2, lon2):
 
 
 # расчет азимута между двумя координатами
-def bearing(lat1, lon1, lat2, lon2):
-    dLat = radians(lat2 - lat1)
-    dLon = radians(lon2 - lon1)
-    lat1 = radians(lat1)
-    lat2 = radians(lat2)
-    B = atan2((sin(dLon)) * cos(lat2),
-              cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon))
-    Bearing = B * 180 / pi
-    if Bearing < 0:
-        Bearing += 360
-    return Bearing
+def calc_azimuth(lat1, lon1, lat2, lon2):
+    """
+    Расчет азимута от (lat1, lon1) к (lat2, lon2)
+    :return: градусы 0-360
+    """
+    lat1_rad, lon1_rad = map(radians, [lat1, lon1])
+    lat2_rad, lon2_rad = map(radians, [lat2, lon2])
+    dlon = lon2_rad - lon1_rad
+    y = sin(dlon) * cos(lat2_rad)
+    x = (cos(lat1_rad) * sin(lat2_rad) -
+         sin(lat1_rad) * cos(lat2_rad) * cos(dlon))
+    az_rad = atan2(y, x)
+    return round((degrees(az_rad) + 360) % 360, 6)
 
 
 # добавляет новую координату между двумя существующими

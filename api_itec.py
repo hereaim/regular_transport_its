@@ -1,5 +1,9 @@
 import requests
 import config
+import shlex, json
+from logger import setup_logger
+
+logger = setup_logger()
 
 
 def request_itec(command: str, stops: list | None = None) -> dict:
@@ -62,3 +66,25 @@ def get_coord_bus_stop() -> list[list[float]]:
                 [float(lat), float(lon)])  # float для haversine/bearing
 
     return coords
+
+
+def gen_curl_create_timemachine(devices: list[dict], start_time: str,
+                                end_time: str) -> str:
+    """Генерирует curl для создания TimeMachine"""
+    payload = {
+        "command": "createTimeMachine",
+        "timeMachine": f"{devices}",
+        "naviTimeStart": f"{start_time}",
+        "naviTimeEnd": f"{end_time}",
+        "original": f"{devices}",
+        "gapDivider": 1,
+        "repeatSecs": 5,
+        "auth_token": f"{config.TOKEN}"
+    }
+    json_str = json.dumps(payload)
+    curl_cmd = (
+        f"curl --location '{config.URL_ITEC}' "
+        f"--header 'Content-Type: application/json' "
+        f"--data {shlex.quote(json_str)}"
+    )
+    return curl_cmd

@@ -1,4 +1,3 @@
-# Настройка логгера
 import logging
 import colorlog
 
@@ -8,10 +7,9 @@ def setup_logger():
     logger.setLevel(logging.INFO)
     logger.handlers.clear()
 
-    # Цветной форматтер для консоли
     console_formatter = colorlog.ColoredFormatter(
-        '%(log_color)s[%(asctime)s] %(levelname)s: %(message)s%(reset)s',
-        datefmt='%H:%M:%S',
+        '%(log_color)s[%(asctime)s] %(levelname)s[%(module)s]: %(message)s%(reset)s',
+        datefmt='%d.%m.%Y %H:%M:%S',
         log_colors={
             'DEBUG': 'cyan',
             'INFO': 'green',
@@ -21,13 +19,6 @@ def setup_logger():
         }
     )
 
-    # Обычный форматтер для файла
-    file_formatter = logging.Formatter(
-        '[%(asctime)s] %(levelname)s: %(message)s',
-        datefmt='%H:%M:%S'
-    )
-
-    # Консоль (цветная)
     ch = logging.StreamHandler()
     ch.setFormatter(console_formatter)
     logger.addHandler(ch)

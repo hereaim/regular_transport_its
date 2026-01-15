@@ -1,7 +1,11 @@
 import datetime as dt
-from api_itec import request_itec, get_data, get_coord_bus_stop
+from api_itec import request_itec, get_data, get_coord_bus_stop, \
+    gen_curl_create_timemachine
 from functions import *
 import config
+from logger import setup_logger
+
+logger = setup_logger()
 
 
 def generate_navigation_sql() -> None:
@@ -11,7 +15,7 @@ def generate_navigation_sql() -> None:
     route_coords, _, devices, _ = get_data(routes_data, config.FLIGHT_ID)
     bus_stop_coords = get_coord_bus_stop()
     if len(route_coords) == 0:
-        return print("Координаты маршрута не найдены или отсутствуют")
+        return logger.info("Координаты маршрута не найдены или отсутствуют")
     else:
         # Мультипликация координат
         route_coords = multiply_coords(route_coords)
@@ -22,16 +26,18 @@ def generate_navigation_sql() -> None:
 
     # Генерация SQL
     query = []
+    time_start = None
+    time_end = None
     config.START_TIME = int(config.START_TIME)
     if len(routes_data["result"]["routes"]) == 0:
-        return print("Маршруты в ITEC не найдены")
+        return logger.info("Маршруты в ITEC не найдены")
     else:
         for i in range(len(route_coords) - 1):
             lat, lon = route_coords[i]
             lat_next, lon_next = route_coords[i + 1]
 
             distance = haversine(lat, lon, lat_next, lon_next)
-            azimuth = int(bearing(lat, lon, lat_next, lon_next))
+            azimuth = int(calc_azimuth(lat, lon, lat_next, lon_next))
             speed_kmh = random_speed(i in stop_idx)
 
             timestamp = dt.datetime.fromtimestamp(config.START_TIME)
@@ -50,14 +56,23 @@ def generate_navigation_sql() -> None:
                 speed_ms = speed_kmh / 3.6
                 config.START_TIME += distance / speed_ms
 
+            if i == 0:
+                time_start = timestamp.strftime('%Y-%m-%dT%H:%M:%SZ')
+            if i == len(route_coords) - 2:
+                time_end = timestamp.strftime('%Y-%m-%dT%H:%M:%SZ')
+
         # Запись
         with open('query.txt', 'w', encoding='utf-8') as f:
             f.write('\n'.join(query))
 
         # Статистика
-        print(f'Всего координат маршрута: {len(route_coords)}')
-        print(f'Остановки: {len(stop_idx)} шт. на индексах {stop_idx}')
-        print(f'Дистанции от остановок: {[f"{d:.1f}м" for d in distance_to]}')
+        logger.info(f'Всего координат маршрута: {len(route_coords)}')
+        logger.info(f'Остановки: {len(stop_idx)} шт. на индексах {stop_idx}')
+        logger.info(
+            f'Дистанции от остановок: {[f"{d:.1f}м" for d in distance_to]}')
+        logger.info(
+            gen_curl_create_timemachine(devices[0], start_time=time_start,
+                                        end_time=time_end))
 
 
 if __name__ == "__main__":
