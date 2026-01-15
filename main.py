@@ -42,7 +42,7 @@ def generate_navigation_sql() -> None:
 
             timestamp = dt.datetime.fromtimestamp(config.START_TIME)
 
-            sql = f"""INSERT INTO navigation_itec.histories
+            sql = f"""INSERT INTO {config.TABLE_NAME}
     (sid, grz, create_timestamp, navi_timestamp, longitude, latitude, course, speed, ip_source, ip_destination, history)
     VALUES('{devices[0]}', '{config.GRZ}', '{timestamp}', '{timestamp}', {lon}, {lat}, {azimuth}, {speed_kmh}, '192.168.32.125', '192.168.32.67:20058', '0');"""
 
