@@ -1,6 +1,7 @@
+import json
+import shlex
 import requests
 import config
-import shlex, json
 from logger import setup_logger
 
 logger = setup_logger()
@@ -34,38 +35,42 @@ def get_data(data: dict, flight_id: str = None):
             if rid is not None:
                 routes_map[rid] = rn
 
-            for flight in route.get("flights", []):
-                if flight.get("id") == flight_id:
-                    route_coords.extend(flight.get("coordinates", []))
-                    stops = flight.get("stops", [])
-                    bus_stop_id = [
-                        stop["id"] if isinstance(stop, dict) else stop for stop
-                        in stops]
-                    devices = flight.get("devices", [])
-                    return route_coords, bus_stop_id, devices, routes_map
+            if flight_id and flight_id in [f.get("id") for f in
+                                           route.get("flights", [])]:
+                for flight in route["flights"]:
+                    if flight.get("id") == flight_id:
+                        route_coords.extend(flight.get("coordinates", []))
+                        stops = flight.get("stops", [])
+                        bus_stop_id = [
+                            stop["id"] if isinstance(stop, dict) else stop for
+                            stop in stops]
+                        devices = flight.get("devices", [])
+                        return route_coords, bus_stop_id, devices, routes_map
     return route_coords, bus_stop_id, devices, routes_map
 
 
-def get_coord_bus_stop() -> list[list[float]]:
-    """Получает координаты bus stops для flight_id"""
+def get_bus_stop(flight_id: str) -> tuple[list, tuple[str, str]]:
+    """Получает информацию по остановкам для рейса"""
     # Шаг 1: Получить routes и bus_stop_id
     routes_data = request_itec("getRegularRoutes")
     _, bus_stop_id, _, _ = get_data(routes_data,
-                                    flight_id=config.FLIGHT_ID)
-
+                                    flight_id=flight_id)
     # Шаг 2: Запросить детали stops
     stops_data = request_itec("getBusStops", stops=bus_stop_id)
     coords = []
     stops_dict = stops_data.get("result", {}).get("stops", {})
-
+    stop_names_dict = {}
     for stop_id, stop_info in stops_dict.items():
         lat = stop_info.get("latitude")
         lon = stop_info.get("longitude")
+        name = stop_info.get("name")
         if lat is not None and lon is not None:
             coords.append(
-                [float(lat), float(lon)])  # float для haversine/bearing
-
-    return coords
+                [float(lat), float(lon)])
+        stop_names_dict[stop_id] = name
+    start_stop_name = stop_names_dict.get(bus_stop_id[0], "Неизвестно")
+    end_stop_name = stop_names_dict.get(bus_stop_id[-1], "Неизвестно")
+    return coords, (start_stop_name, end_stop_name)
 
 
 def gen_curl_create_timemachine(devices: list[dict], start_time: str,
