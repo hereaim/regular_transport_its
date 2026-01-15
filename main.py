@@ -10,6 +10,11 @@ def generate_navigation_sql() -> None:
     routes_data = request_itec("getRegularRoutes")
     route_coords, _, devices, _ = get_data(routes_data, config.FLIGHT_ID)
     bus_stop_coords = get_coord_bus_stop()
+    if len(route_coords) == 0:
+        return print("Координаты маршрута не найдены или отсутствуют")
+    else:
+        # Мультипликация координат
+        route_coords = multiply_coords(route_coords)
 
     # Поиск остановок
     stop_idx, distance_to = stop_find(route_coords, bus_stop_coords,

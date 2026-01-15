@@ -45,11 +45,10 @@ def multiply_coords(x: list) -> list:
         lat1 = abs((x[i][0] + x[i + 1][0]) / 2)
         lon1 = abs((x[i][1] + x[i + 1][1]) / 2)
 
-        f.append([lat1, lon1])
+        f.append([round(lat1, 6), round(lon1,6)])
 
     f.append(x[-1])
     x = f
-
     return x
 
 
